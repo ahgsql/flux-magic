@@ -1,0 +1,23 @@
+{
+  "name": "flux-magic",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.25.0",
+    "comfyui-nodejs": "^1.0.1",
+    "express": "^4.19.2",
+    "image-to-base64": "^2.2.0",
+    "jsonrepair": "^3.8.0",
+    "ollama": "^0.5.6",
+    "open": "^10.1.0",
+    "replicate": "^0.32.0"
+  }
+}

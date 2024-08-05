@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ComfyUI Web Interface</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .logo {
+        width: 205px;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.9);
+      }
+      .modal-content {
+        margin: auto;
+        display: block;
+        width: 80%;
+        max-width: 700px;
+      }
+      #modalLabel {
+        color: white;
+        text-align: justify;
+      }
+      .close {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        transition: 0.3s;
+      }
+      .close:hover,
+      .close:focus {
+        color: #bbb;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .skeleton {
+        background-color: #e2e8f0;
+        height: 300px;
+        animation: pulse 1.5s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+      #result {
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+      }
+    </style>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.7.0/nouislider.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100 flex flex-col min-h-screen">
+    <div class="container mx-auto p-4 flex flex-grow">
+      <div class="w-1/3 pr-4">
+        <form
+          id="generateForm"
+          class="bg-white shadow-md rounded px-8 pt-6 pb-8"
+        >
+          <img src="logo.webp" alt="Logo" class="logo mx-4 my-4" />
+          <div class="mb-4">
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              for="prompt"
+            >
+              Say Something
+            </label>
+            <textarea
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="prompt"
+              rows="4"
+              placeholder="Enter your desired image in very natural language"
+            ></textarea>
+          </div>
+          <div class="mb-4">
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              for="artStyle"
+            >
+              Art Style
+            </label>
+            <select
+              id="artStyle"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2"
+            >
+              <option value="Custom">Custom</option>
+
+              <option value="Realism" selected>Realism</option>
+              <option value="Impressionism">Impressionism</option>
+              <option value="Surrealism">Surrealism</option>
+              <option value="Abstract">Abstract</option>
+              <option value="Pop Art">Pop Art</option>
+              <option value="Minimalism">Minimalism</option>
+              <option value="Cubism">Cubism</option>
+              <option value="Art Nouveau">Art Nouveau</option>
+              <option value="Baroque">Baroque</option>
+              <option value="Renaissance">Renaissance</option>
+              <option value="Expressionism">Expressionism</option>
+              <option value="Art Deco">Art Deco</option>
+              <option value="Futurism">Futurism</option>
+              <option value="Romanticism">Romanticism</option>
+              <option value="Photorealism">Photorealism</option>
+              <option value="Pointillism">Pointillism</option>
+              <option value="Fauvism">Fauvism</option>
+              <option value="Gothic">Gothic</option>
+              <option value="Bauhaus">Bauhaus</option>
+              <option value="Steampunk">Steampunk</option>
+              <option value="Cyberpunk">Cyberpunk</option>
+              <option value="Vaporwave">Vaporwave</option>
+              <option value="Ukiyo-e">Ukiyo-e</option>
+              <option value="Brutalism">Brutalism</option>
+              <option value="Glitch Art">Glitch Art</option>
+            </select>
+            <input
+              type="text"
+              id="customStyle"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Enter custom style"
+              style="display: none"
+            />
+          </div>
+          <div class="mb-4">
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              for="slider"
+            >
+              Image Dimensions
+            </label>
+            <div id="slider" class="mb-4"></div>
+            <span
+              id="dimensions"
+              class="block text-gray-700 text-sm font-bold"
+            ></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <button
+              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              type="submit"
+            >
+              Magic!
+            </button>
+          </div>
+        </form>
+      </div>
+      <div id="result" class="w-2/3 grid grid-cols-2 gap-4"></div>
+    </div>
+
+    <div id="imageModal" class="modal">
+      <span class="close">&times;</span>
+      <img class="modal-content" id="modalImage" />
+      <span id="modalLabel"></span>
+    </div>
+    <footer class="bg-gray-200 text-center py-4">
+      <p class="text-gray-600">
+        Powered by the magical, occasionally caffeinated electrons of
+        <a
+          href="https://github.com/ahgsql/flux-magic"
+          class="text-blue-500 hover:text-blue-700 font-bold"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Flux-Magic
+        </a>
+        . Warning: May cause spontaneous bouts of creativity and uncontrollable
+        urges to redecorate.
+      </p>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.7.0/nouislider.min.js"></script>
+    <script>
+      const form = document.getElementById("generateForm");
+      const result = document.getElementById("result");
+      const modal = document.getElementById("imageModal");
+      const modalImg = document.getElementById("modalImage");
+      const modalLabel = document.getElementById("modalLabel");
+      const closeBtn = document.getElementsByClassName("close")[0];
+
+      const dimensionsLabel = document.getElementById("dimensions");
+      const slider = document.getElementById("slider");
+      const artStyleSelect = document.getElementById("artStyle");
+      const customStyleInput = document.getElementById("customStyle");
+
+      const resValue = [
+        "512 x 512",
+        "768 x 768",
+        "832 x 1216",
+        "1024 x 1024",
+        "1216 x 832",
+        "1344 x 768",
+        "768 x 1344",
+      ];
+      const widthHeightValues = [
+        { width: 512, height: 512 },
+        { width: 768, height: 768 },
+        { width: 832, height: 1216 },
+        { width: 1024, height: 1024 },
+        { width: 1216, height: 832 },
+        { width: 1344, height: 768 },
+        { width: 768, height: 1344 },
+      ];
+
+      noUiSlider.create(slider, {
+        start: [0],
+        connect: "lower",
+        step: 1,
+        range: {
+          min: 0,
+          max: resValue.length - 1,
+        },
+
+        format: {
+          to: function (value) {
+            return Math.round(value);
+          },
+          from: function (value) {
+            return Number(value);
+          },
+        },
+      });
+
+      slider.noUiSlider.on("update", function (values, handle) {
+        const index = Math.round(values[handle]);
+        dimensionsLabel.textContent = resValue[index];
+      });
+
+      artStyleSelect.addEventListener("change", function () {
+        if (this.value === "Custom") {
+          customStyleInput.style.display = "block";
+        } else {
+          customStyleInput.style.display = "none";
+          customStyleInput.value = "";
+        }
+      });
+
+      customStyleInput.addEventListener("input", function () {
+        if (this.value !== "") {
+          artStyleSelect.value = "Custom";
+        }
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const prompt = document.getElementById("prompt").value;
+        const style =
+          artStyleSelect.value === "Custom"
+            ? customStyleInput.value
+            : artStyleSelect.value;
+        const sliderValue = slider.noUiSlider.get();
+        const { width, height } = widthHeightValues[Math.round(sliderValue)];
+
+        const loadingElement = document.createElement("div");
+        loadingElement.className =
+          "col-span-2 flex justify-center items-center h-64";
+        loadingElement.innerHTML = `<div class="spinner"></div>`;
+        result.insertBefore(loadingElement, result.firstChild);
+
+        try {
+          const response = await axios.post("/generate", {
+            prompt,
+            width,
+            height,
+            style,
+          });
+
+          result.removeChild(loadingElement);
+
+          if (Array.isArray(response.data.images)) {
+            response.data.images.forEach((image) => {
+              addImageToGrid(image.base64, response.data.enhancedPrompt);
+            });
+          } else {
+            addImageToGrid(response.data.images, response.data.enhancedPrompt);
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("An error occurred while generating the image.");
+          result.removeChild(loadingElement);
+        }
+      });
+
+      function addImageToGrid(base64, alt) {
+        const img = document.createElement("img");
+        img.src = `data:image/png;base64,${base64}`;
+        img.alt = alt;
+        img.className = "w-full h-auto cursor-pointer";
+        img.onclick = function () {
+          modal.style.display = "block";
+          modalImg.src = this.src;
+          modalLabel.innerHTML = this.alt;
+        };
+
+        const skeletonLoader = document.createElement("div");
+        skeletonLoader.className = "skeleton w-full";
+        result.insertBefore(skeletonLoader, result.firstChild);
+
+        img.onload = function () {
+          result.replaceChild(img, skeletonLoader);
+        };
+      }
+
+      closeBtn.onclick = function () {
+        modal.style.display = "none";
+      };
+
+      window.onclick = function (event) {
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+    </script>
+  </body>
+</html>
