@@ -172,6 +172,13 @@
               class="block text-gray-700 text-sm font-bold"
             ></span>
           </div>
+          <div class="mb-4">
+            <label class="flex items-center">
+              <input type="checkbox" id="skipLLM" class="mr-2" />
+              <span class="text-sm">Skip LLM</span>
+            </label>
+          </div>
+
           <div class="flex items-center justify-between">
             <button
               class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -287,6 +294,7 @@
             : artStyleSelect.value;
         const sliderValue = slider.noUiSlider.get();
         const { width, height } = widthHeightValues[Math.round(sliderValue)];
+        const skipLLM = document.getElementById("skipLLM").checked;
 
         const loadingElement = document.createElement("div");
         loadingElement.className =
@@ -300,6 +308,7 @@
             width,
             height,
             style,
+            skipLLM,
           });
 
           result.removeChild(loadingElement);
@@ -317,7 +326,6 @@
           result.removeChild(loadingElement);
         }
       });
-
       function addImageToGrid(base64, alt) {
         const img = document.createElement("img");
         img.src = `data:image/png;base64,${base64}`;
