@@ -58,7 +58,7 @@ dist
 
 # Gatsby files
 .cache/
-
+stats.json
 
 # vuepress build output
 .vuepress/dist
