@@ -199,28 +199,43 @@
               class="block text-gray-700 text-sm font-bold"
             ></span>
           </div>
-          <div class="mb-4">
-            <label class="flex items-center">
-              <input type="checkbox" id="skipLLM" class="mr-2" />
-              <span class="text-sm">Skip LLM</span>
-            </label>
-          </div>
-          <div class="mb-4">
-            <label class="flex items-center">
-              <input type="checkbox" id="crazyLLM" class="mr-2" />
-              <span class="text-sm">Crazy LLM</span>
-            </label>
-          </div>
-          <div id="progressContainer" class="mb-4 hidden">
-            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-              <div
-                id="progressBar"
-                class="bg-blue-600 h-2.5 rounded-full"
-                style="width: 0%"
-              ></div>
+          <div class="flex gap-2">
+            <div class="mb-4">
+              <label class="flex items-center">
+                <input type="checkbox" id="skipLLM" class="mr-2" />
+                <span class="text-sm">Skip LLM</span>
+              </label>
             </div>
-            <p id="progressText" class="text-sm text-gray-600 mt-1">0%</p>
+            <div class="mb-4">
+              <label class="flex items-center">
+                <input type="checkbox" id="crazyLLM" class="mr-2" />
+                <span class="text-sm">Crazy LLM</span>
+              </label>
+            </div>
           </div>
+          <span class="text-sm">Flux Model</span>
+
+          <div class="flex gap-2">
+            <div class="mb-4">
+              <label class="flex items-center">
+                <input type="radio" name="fluxModel" value="dev" class="mr-2" />
+                <span class="text-sm">Dev</span>
+              </label>
+            </div>
+            <div class="mb-4">
+              <label class="flex items-center">
+                <input
+                  type="radio"
+                  name="fluxModel"
+                  value="schnell"
+                  class="mr-2"
+                  checked
+                />
+                <span class="text-sm">Schnell</span>
+              </label>
+            </div>
+          </div>
+
           <div class="flex items-center justify-between">
             <button
               class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -229,6 +244,16 @@
             >
               Magic!
             </button>
+          </div>
+          <div id="progressContainer" class="mb-4 hidden mt-4">
+            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+              <div
+                id="progressBar"
+                class="bg-blue-600 h-2.5 rounded-full"
+                style="width: 0%"
+              ></div>
+            </div>
+            <p id="progressText" class="text-sm text-gray-600 mt-1">0%</p>
           </div>
         </form>
       </div>
@@ -364,6 +389,9 @@
         const { width, height } = widthHeightValues[Math.round(sliderValue)];
         const skipLLM = document.getElementById("skipLLM").checked;
         const crazyLLM = document.getElementById("crazyLLM").checked;
+        const model = document.querySelector(
+          'input[name="fluxModel"]:checked'
+        ).value;
 
         const loadingElement = document.createElement("div");
         loadingElement.className =
@@ -379,6 +407,7 @@
             style,
             skipLLM,
             crazyLLM,
+            model,
           });
 
           result.removeChild(loadingElement);

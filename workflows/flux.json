@@ -62,7 +62,7 @@
   },
   "12": {
     "inputs": {
-      "unet_name": "flux1-dev.sft",
+      "unet_name": "{unet_name}",
       "weight_dtype": "fp8_e4m3fn"
     },
     "class_type": "UNETLoader",

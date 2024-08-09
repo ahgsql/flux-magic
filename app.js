@@ -36,6 +36,7 @@ let flux;
 
 const statsFile = path.join(__dirname, 'stats.json');
 
+
 async function loadStats() {
     try {
         const data = await fs.readFile(statsFile, 'utf8');
@@ -44,7 +45,7 @@ async function loadStats() {
         if (error.code === 'ENOENT') {
             const initialStats = {
                 totalImagesGenerated: 0,
-                resolutions: {}
+                models: {}
             };
             await fs.writeFile(statsFile, JSON.stringify(initialStats, null, 2));
             return initialStats;
@@ -53,20 +54,25 @@ async function loadStats() {
     }
 }
 
-async function updateStats(width, height, generationTime, llmTime) {
+async function updateStats(width, height, generationTime, llmTime, model) {
     const stats = await loadStats();
     const resolution = `${width}x${height}`;
-    if (!stats.resolutions[resolution]) {
-        stats.resolutions[resolution] = {
+
+    if (!stats.models[model]) {
+        stats.models[model] = {};
+    }
+
+    if (!stats.models[model][resolution]) {
+        stats.models[model][resolution] = {
             totalTime: 0,
             count: 0,
             llmTime: 0
         };
     }
 
-    stats.resolutions[resolution].totalTime += generationTime;
-    stats.resolutions[resolution].llmTime += llmTime;
-    stats.resolutions[resolution].count += 1;
+    stats.models[model][resolution].totalTime += generationTime;
+    stats.models[model][resolution].llmTime += llmTime;
+    stats.models[model][resolution].count += 1;
     stats.totalImagesGenerated += 1;
 
     await fs.writeFile(statsFile, JSON.stringify(stats, null, 2));
@@ -87,7 +93,7 @@ app.get('/', (req, res) => {
 app.post('/generate', async (req, res) => {
     try {
         const stats = await loadStats(); // Her istek için en güncel istatistikleri yükle
-        const { prompt, width, height, style, skipLLM, crazyLLM } = req.body;
+        const { prompt, width, height, style, skipLLM, crazyLLM, model = "dev" } = req.body;
         let finalPrompt;
         let llmStartTime, llmEndTime, imageStartTime, imageEndTime;
 
@@ -117,24 +123,28 @@ app.post('/generate', async (req, res) => {
         const llmTime = llmEndTime - llmStartTime;
 
         const resolution = `${width}x${height}`;
-        const avgGenerationTime = stats.resolutions[resolution]
-            ? (stats.resolutions[resolution].totalTime + stats.resolutions[resolution].llmTime) / stats.resolutions[resolution].count
+        const modelStats = stats.models[model] || {};
+        const resolutionStats = modelStats[resolution] || { totalTime: 0, count: 0, llmTime: 0 };
+        const avgGenerationTime = resolutionStats.count > 0
+            ? (resolutionStats.totalTime + resolutionStats.llmTime) / resolutionStats.count
             : 30000; // Default to 30 seconds if no data
+
+        imageStartTime = Date.now();
 
         imageStartTime = Date.now();
 
         if (process.env.IMAGE == "LOCAL") {
             flux.prepare({
                 positive: finalPrompt,
-                steps: 25,
+                steps: (model == "dev" ? 25 : 5),
                 batchSize: 1,
-                seed: randomSeed(),
+                seed: 514,
                 width: parseInt(width),
                 height: parseInt(height),
+                unet_name: "flux1-" + model + ".sft"
             });
 
             const estimatedTime = Math.round(avgGenerationTime / 1000);
-
             const updateInterval = setInterval(() => {
                 const elapsedSeconds = Math.round((Date.now() - imageStartTime) / 1000);
                 const progress = Math.min(elapsedSeconds / estimatedTime, 1);
@@ -147,11 +157,11 @@ app.post('/generate', async (req, res) => {
 
             imageEndTime = Date.now();
             const actualTime = imageEndTime - imageStartTime;
-            await updateStats(width, height, actualTime, llmTime);
+            await updateStats(width, height, actualTime, llmTime, model);
+
 
             console.log(`\nActual generation time: ${actualTime} ms`);
             io.emit('progressUpdate', { progress: 100 });
-
             res.json({ success: true, enhancedPrompt: finalPrompt, images: result.map(img => ({ base64: img.base64.split(',')[1] })) });
         } else {
             let ar = findNearestAspectRatio(parseInt(width), parseInt(height));
@@ -166,6 +176,7 @@ app.post('/generate', async (req, res) => {
             res.json({ success: true, enhancedPrompt: finalPrompt, images: base64 });
         }
     } catch (error) {
+        io.emit('progressUpdate', { progress: 100 });
         console.error(error);
         res.status(500).json({ success: false, error: error.message });
     }
